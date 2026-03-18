@@ -1,40 +1,105 @@
 package com.example.nightagent.ui.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.nightagent.ui.theme.*
 
 @Composable
-fun SOSButton() {
+fun SOSButton(onLongPress: () -> Unit = {}) {
+    val infiniteTransition = rememberInfiniteTransition(label = "SOSGlow")
+    val glowScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowScale"
+    )
+
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.9f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "buttonScale"
+    )
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp),
+            .padding(vertical = 40.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Outer Glow
+        Box(
+            modifier = Modifier
+                .size(160.dp)
+                .scale(glowScale)
+                .background(SOSGlow, CircleShape)
+        )
 
+        // Button Body
         Box(
             modifier = Modifier
                 .size(180.dp)
-                .background(Color(0xFFAA336A), CircleShape),
+                .scale(scale)
+                .clip(CircleShape)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            BlushPink.copy(alpha = 0.9f),
+                            Lavender.copy(alpha = 0.9f),
+                            SOSRed.copy(alpha = 0.8f)
+                        )
+                    )
+                )
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isPressed = true
+                            try {
+                                awaitRelease()
+                            } finally {
+                                isPressed = false
+                            }
+                        },
+                        onLongPress = {
+                            onLongPress()
+                        }
+                    )
+                },
             contentAlignment = Alignment.Center
         ) {
-
-            Text(
-                "SOS",
-                color = Color.White,
-                fontSize = 32.sp
-            )
-
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "SOS",
+                    color = Color.White,
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                if (isPressed) {
+                    Text(
+                        "Hold to Alert",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 12.sp
+                    )
+                }
+            }
         }
-
     }
-
 }
