@@ -1,6 +1,10 @@
 package com.example.nightagent.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,7 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,48 +21,78 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import com.example.nightagent.contacts.ContactManager
 import com.example.nightagent.ui.theme.*
 
 data class EmergencyContact(val name: String, val phone: String, val isPriority: Boolean)
 
 @Composable
 fun ContactsScreen() {
-    val contacts = listOf(
-        EmergencyContact("Mom", "+1 234 567 890", true),
-        EmergencyContact("Dad", "+1 234 567 891", false),
-        EmergencyContact("Sister", "+1 234 567 892", false),
-        EmergencyContact("Best Friend", "+1 234 567 893", true)
-    )
+
+    val context = LocalContext.current
+
+    var showDialog by remember { mutableStateOf(false) }
+
+    var nameInput by remember { mutableStateOf("") }
+    var phoneInput by remember { mutableStateOf("") }
+
+    var contacts by remember {
+        mutableStateOf(
+            ContactManager.getContacts(context)
+
+        )
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(PastelBg)
     ) {
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp)
         ) {
+
             item {
                 Spacer(modifier = Modifier.height(24.dp))
+
                 Text(
                     "Emergency Contacts",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = TextPrimary
                 )
+
                 Spacer(modifier = Modifier.height(20.dp))
+
                 Text(
                     "Primary contact highlighted",
                     color = TextSecondary,
                     fontSize = 14.sp
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            items(contacts.size) { index ->
-                ContactCard(contacts[index])
+            items(contacts) { contact ->
+
+                ContactCard(
+                    contact = contact,
+                    onDelete = {
+
+                        val updated = contacts.filter { it != contact }
+
+                        contacts = updated
+
+                        ContactManager.saveContacts(
+                            context,
+                            updated
+                        )
+                    }
+                )
             }
 
             item {
@@ -66,9 +100,8 @@ fun ContactsScreen() {
             }
         }
 
-        // Add Contact FAB
         FloatingActionButton(
-            onClick = {},
+            onClick = { showDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = 20.dp),
@@ -78,10 +111,90 @@ fun ContactsScreen() {
             Icon(Icons.Default.Add, contentDescription = "Add Contact")
         }
     }
+
+    if (showDialog) {
+
+        AlertDialog(
+
+            onDismissRequest = { showDialog = false },
+
+            confirmButton = {
+
+                TextButton(
+                    onClick = {
+
+                        if (phoneInput.isNotBlank()) {
+
+                            val updated = contacts + EmergencyContact(
+                                nameInput,
+                                phoneInput,
+                                false
+                            )
+
+                            contacts = updated
+
+                            ContactManager.saveContacts(
+                                context,
+                                updated
+                            )
+
+                            nameInput = ""
+                            phoneInput = ""
+
+                            showDialog = false
+                        }
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+
+            dismissButton = {
+
+                TextButton(
+                    onClick = { showDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+
+            },
+
+            title = { Text("Add Emergency Contact") },
+
+            text = {
+
+                Column {
+
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Name") }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = phoneInput,
+                        onValueChange = { phoneInput = it },
+                        label = { Text("Phone Number") }
+                    )
+
+                }
+
+            }
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ContactCard(contact: EmergencyContact) {
+fun ContactCard(
+    contact: EmergencyContact,
+    onDelete: (EmergencyContact) -> Unit
+) {
+
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -90,41 +203,54 @@ fun ContactCard(contact: EmergencyContact) {
         colors = CardDefaults.cardColors(containerColor = SurfaceLight),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
+
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .padding(20.dp)
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = { onDelete(contact) }
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Profile Initial
+
             Box(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(CircleShape)
                     .background(
-                        if (contact.isPriority) BlushPink.copy(alpha = 0.3f) 
+                        if (contact.isPriority) BlushPink.copy(alpha = 0.3f)
                         else Lavender.copy(alpha = 0.2f)
                     ),
                 contentAlignment = Alignment.Center
             ) {
+
                 Text(
                     text = contact.name.take(1).uppercase(),
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp,
                     color = if (contact.isPriority) PurpleEnd else Lavender
                 )
+
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
+
                     Text(
                         text = contact.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = TextPrimary
                     )
+
                     if (contact.isPriority) {
+
                         Spacer(modifier = Modifier.width(8.dp))
+
                         Icon(
                             Icons.Default.Star,
                             contentDescription = "Primary",
@@ -133,20 +259,36 @@ fun ContactCard(contact: EmergencyContact) {
                         )
                     }
                 }
+
                 Text(
                     text = contact.phone,
                     color = TextSecondary,
                     fontSize = 15.sp
                 )
             }
-            
+
             IconButton(
-                onClick = {},
+                onClick = {
+
+                    val intent = Intent(Intent.ACTION_DIAL).apply {
+                        data = Uri.parse("tel:${contact.phone}")
+                    }
+
+                    context.startActivity(intent)
+
+                },
                 modifier = Modifier
                     .size(48.dp)
                     .background(SuccessGreen.copy(alpha = 0.15f), CircleShape)
             ) {
-                Icon(Icons.Default.Call, null, tint = SuccessGreen, modifier = Modifier.size(24.dp))
+
+                Icon(
+                    Icons.Default.Call,
+                    null,
+                    tint = SuccessGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+
             }
         }
     }

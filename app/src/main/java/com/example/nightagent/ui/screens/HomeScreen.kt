@@ -22,7 +22,8 @@ import com.example.nightagent.ui.theme.*
 fun HomeScreen(
     onSOSClick: () -> Unit,
     onFakeCallClick: () -> Unit,
-    onSafeWalkClick: () -> Unit
+    onSafeWalkClick: () -> Unit,
+    onShareLocationClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -108,7 +109,7 @@ fun HomeScreen(
                         title = "Share Location",
                         icon = Icons.Default.LocationOn,
                         iconColor = InfoBlue,
-                        onClick = {}
+                        onClick = onShareLocationClick
                     )
                     QuickActionCard(
                         title = "Fake Call",
