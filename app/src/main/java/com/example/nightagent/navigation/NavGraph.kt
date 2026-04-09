@@ -73,7 +73,7 @@ fun NavGraph(
             composable("home") {
                 HomeScreen(
                     onSOSClick = {
-                        Toast.makeText(context, "SOS button pressed", Toast.LENGTH_SHORT).show()
+
                         SOSManager.triggerSOS(context)
                         navController.navigate("sosactive")
                     },

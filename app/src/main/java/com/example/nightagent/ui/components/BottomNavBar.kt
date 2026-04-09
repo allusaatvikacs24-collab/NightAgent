@@ -17,7 +17,7 @@ import com.example.nightagent.ui.theme.*
 @Composable
 fun BottomNavBar(selected: String, onNavigate: (String) -> Unit) {
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp,
         modifier = Modifier.height(72.dp)
     ) {

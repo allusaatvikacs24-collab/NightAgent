@@ -1,5 +1,6 @@
 package com.example.nightagent.ui.screens
 
+import androidx.compose.material3.MaterialTheme
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -52,7 +53,7 @@ fun MapScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundLight)
+            .background(MaterialTheme.colorScheme.background)
     ) {
 
         if (userLocation != null) {

@@ -1,27 +1,55 @@
 package com.example.nightagent
 
+import com.example.nightagent.sos.VoiceSOSManager
 import android.content.Intent
-import android.widget.Toast
-import com.example.nightagent.sos.LocationProvider
-import com.example.nightagent.sos.ShakeDetector
-import com.example.nightagent.sos.SOSManager
+import android.content.IntentFilter
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nightagent.navigation.NavGraph
+import com.example.nightagent.sos.LocationProvider
+import com.example.nightagent.sos.PowerButtonReceiver
+import com.example.nightagent.sos.ShakeDetector
+import com.example.nightagent.sos.SOSManager
+import com.example.nightagent.sos.SafetySettings
 import com.example.nightagent.ui.theme.NightagentTheme
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var voiceSOS: VoiceSOSManager
+
     private lateinit var shakeDetector: ShakeDetector
+    private lateinit var powerReceiver: PowerButtonReceiver
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Shake Detector
         shakeDetector = ShakeDetector(this) {
             SOSManager.triggerSOS(this)
         }
 
         shakeDetector.start()
+
+        voiceSOS = VoiceSOSManager(this) {
+
+            if (SafetySettings.voiceSOS.value) {
+                SOSManager.triggerSOS(this)
+            }
+        }
+
+        voiceSOS.startListening()
+
+        // Register Power Button Receiver dynamically
+        powerReceiver = PowerButtonReceiver()
+
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+        }
+
+        registerReceiver(powerReceiver, filter)
 
         setContent {
             NightagentTheme {
@@ -65,5 +93,20 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        shakeDetector.start()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        shakeDetector.stop()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(powerReceiver)
     }
 }

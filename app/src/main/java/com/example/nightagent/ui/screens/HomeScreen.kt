@@ -1,5 +1,6 @@
 package com.example.nightagent.ui.screens
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +29,7 @@ fun HomeScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundLight)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         item {
             // Gradient Header
@@ -100,7 +101,7 @@ fun HomeScreen(
                     "Quick Actions",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 
@@ -147,7 +148,7 @@ fun HomeScreen(
                         "Recent Activity",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     TextButton(onClick = {}) {
                         Text("See All", color = PurpleEnd)

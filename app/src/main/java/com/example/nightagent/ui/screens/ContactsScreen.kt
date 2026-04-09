@@ -47,7 +47,7 @@ fun ContactsScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PastelBg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
 
         LazyColumn(
@@ -63,14 +63,14 @@ fun ContactsScreen() {
                     "Emergency Contacts",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
                     "Primary contact highlighted",
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
 
@@ -200,7 +200,7 @@ fun ContactCard(
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceLight),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
 
