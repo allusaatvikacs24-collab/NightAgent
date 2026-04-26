@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="64dp"
+    android:viewportWidth="48"
+    android:viewportHeight="64">
+  <!-- Blue police pin -->
+  <path
+      android:fillColor="#2196F3"
+      android:pathData="M24,0 Q12,0 12,12 L12,48 Q12,56 20,60 Q24,64 28,60 L36,48 L36,12 Q36,0 24,0 Z"/>
+  <!-- White star detail -->
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M24,16 L26,24 L34,24 L27.5,29 L30,38 L24,32 L18,38 L20.5,29 L14,24 L22,24 Z"
+      android:strokeWidth="0"/>
+</vector>

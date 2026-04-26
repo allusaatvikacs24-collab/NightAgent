@@ -1,6 +1,5 @@
 package com.example.nightagent.ui.screens
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,11 +12,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LifecycleOwner
+
+import com.example.nightagent.sos.EvidenceRecorder
 import com.example.nightagent.ui.components.*
 import com.example.nightagent.ui.theme.*
+import android.content.Context
 
 @Composable
 fun HomeScreen(
@@ -26,6 +31,9 @@ fun HomeScreen(
     onSafeWalkClick: () -> Unit,
     onShareLocationClick: () -> Unit
 ) {
+    val context = LocalContext.current as Context
+    val lifecycleOwner = LocalLifecycleOwner.current as LifecycleOwner
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -126,12 +134,8 @@ fun HomeScreen(
                         iconColor = SuccessGreen,
                         onClick = onSafeWalkClick
                     )
-                    QuickActionCard(
-                        title = "Record Evidence",
-                        icon = Icons.Default.Mic,
-                        iconColor = Lavender,
-                        onClick = {}
-                    )
+                    // Manual Recording Buttons
+                    ManualRecordingButtons(context, lifecycleOwner)
                 }
             }
         }
@@ -172,6 +176,36 @@ fun HomeScreen(
                 iconColor = InfoBlue
             )
             Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun ManualRecordingButtons(
+    context: Context,
+    lifecycleOwner: LifecycleOwner
+) {
+Box(modifier = Modifier.fillMaxWidth()) {
+        if (EvidenceRecorder.isRecording) {
+            Button(
+                onClick = { EvidenceRecorder.stopRecording(context) },
+                modifier = Modifier.fillMaxSize(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) {
+                Icon(Icons.Default.Stop, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Stop Recording")
+            }
+        } else {
+            Button(
+                onClick = { EvidenceRecorder.startRecording(context, lifecycleOwner) },
+                modifier = Modifier.fillMaxSize(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+            ) {
+                Icon(Icons.Default.Videocam, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Start Recording")
+            }
         }
     }
 }

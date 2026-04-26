@@ -25,7 +25,11 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.nightagent.contacts.ContactManager
 import com.example.nightagent.ui.theme.*
 
-data class EmergencyContact(val name: String, val phone: String, val isPriority: Boolean)
+data class EmergencyContact(
+    val name: String,
+    val phone: String,
+    val isPriority: Boolean
+)
 
 @Composable
 fun ContactsScreen() {
@@ -37,11 +41,12 @@ fun ContactsScreen() {
     var nameInput by remember { mutableStateOf("") }
     var phoneInput by remember { mutableStateOf("") }
 
-    var contacts by remember {
-        mutableStateOf(
-            ContactManager.getContacts(context)
+    // ✅ FIXED STATE HANDLING
+    var contacts by remember { mutableStateOf(listOf<EmergencyContact>()) }
 
-        )
+    // 🔥 LOAD CONTACTS PROPERLY
+    LaunchedEffect(Unit) {
+        contacts = ContactManager.getContacts(context)
     }
 
     Box(
@@ -77,6 +82,18 @@ fun ContactsScreen() {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
+            // ✅ EMPTY STATE
+            if (contacts.isEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(40.dp))
+                    Text(
+                        text = "No contacts added yet",
+                        color = Color.Gray,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
             items(contacts) { contact ->
 
                 ContactCard(
@@ -85,12 +102,10 @@ fun ContactsScreen() {
 
                         val updated = contacts.filter { it != contact }
 
-                        contacts = updated
+                        ContactManager.saveContacts(context, updated)
 
-                        ContactManager.saveContacts(
-                            context,
-                            updated
-                        )
+                        // 🔥 RELOAD PROPERLY
+                        contacts = ContactManager.getContacts(context)
                     }
                 )
             }
@@ -112,6 +127,7 @@ fun ContactsScreen() {
         }
     }
 
+    // 🔥 ADD CONTACT DIALOG
     if (showDialog) {
 
         AlertDialog(
@@ -131,12 +147,10 @@ fun ContactsScreen() {
                                 false
                             )
 
-                            contacts = updated
+                            ContactManager.saveContacts(context, updated)
 
-                            ContactManager.saveContacts(
-                                context,
-                                updated
-                            )
+                            // 🔥 RELOAD AFTER SAVE
+                            contacts = ContactManager.getContacts(context)
 
                             nameInput = ""
                             phoneInput = ""
@@ -178,9 +192,7 @@ fun ContactsScreen() {
                         onValueChange = { phoneInput = it },
                         label = { Text("Phone Number") }
                     )
-
                 }
-
             }
         )
     }
@@ -231,7 +243,6 @@ fun ContactCard(
                     fontSize = 22.sp,
                     color = if (contact.isPriority) PurpleEnd else Lavender
                 )
-
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -275,7 +286,6 @@ fun ContactCard(
                     }
 
                     context.startActivity(intent)
-
                 },
                 modifier = Modifier
                     .size(48.dp)
@@ -288,7 +298,6 @@ fun ContactCard(
                     tint = SuccessGreen,
                     modifier = Modifier.size(24.dp)
                 )
-
             }
         }
     }

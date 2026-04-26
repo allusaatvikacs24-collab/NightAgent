@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="64dp"
+    android:viewportWidth="48"
+    android:viewportHeight="64">
+  <!-- Red hospital pin -->
+  <path
+      android:fillColor="#F44336"
+      android:pathData="M24,0 Q12,0 12,12 L12,48 Q12,56 20,60 Q24,64 28,60 L36,48 L36,12 Q36,0 24,0 Z"/>
+  <!-- White cross detail -->
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M20,24 L28,24 L28,28 L32,28 L32,36 L28,36 L28,40 L20,40 L20,36 L16,36 L16,28 L20,28 Z"/>
+</vector>

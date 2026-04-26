@@ -32,27 +32,19 @@ fun SafeWalkScreen() {
     var userLocation by remember { mutableStateOf<GeoPoint?>(null) }
     val walkPath = remember { mutableStateListOf<GeoPoint>() }
 
-    // Get live location repeatedly
+    var mapViewRef by remember { mutableStateOf<MapView?>(null) }
+
     LaunchedEffect(isWalking) {
-
         while (isWalking) {
-
             LocationProvider.getLocation(context) { location: Location? ->
-
                 location?.let {
-
-                    val newPoint = GeoPoint(it.latitude, it.longitude)
-                    userLocation = newPoint
-                    walkPath.add(newPoint)
-
+                    val point = GeoPoint(it.latitude, it.longitude)
+                    userLocation = point
+                    walkPath.add(point)
                 }
-
             }
-
             kotlinx.coroutines.delay(3000)
-
         }
-
     }
 
     Box(
@@ -61,52 +53,44 @@ fun SafeWalkScreen() {
             .background(Color.Black)
     ) {
 
-        if (isWalking ) {
+        if (isWalking) {
 
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { ctx ->
+                    Configuration.getInstance().setUserAgentValue(ctx.packageName)
 
-                    Configuration.getInstance()
-                        .setUserAgentValue(ctx.packageName)
-
-                    MapView(ctx).apply {
+                    val mapView = MapView(ctx).apply {
                         setTileSource(TileSourceFactory.MAPNIK)
                         setMultiTouchControls(true)
                         controller.setZoom(17.0)
                     }
+
+                    mapViewRef = mapView
+                    mapView
                 },
                 update = { mapView ->
 
-                    userLocation?.let {
+                    userLocation?.let { location ->
 
-                        mapView.controller.setCenter(it)
-
+                        mapView.controller.setCenter(location)
                         mapView.overlays.clear()
 
                         if (walkPath.size > 1) {
-
                             val polyline = Polyline()
                             polyline.setPoints(walkPath)
                             polyline.outlinePaint.color = android.graphics.Color.RED
                             polyline.outlinePaint.strokeWidth = 8f
-
                             mapView.overlays.add(polyline)
-
                         }
 
                         val marker = Marker(mapView)
-                        marker.position = it
-                        marker.setAnchor(
-                            Marker.ANCHOR_CENTER,
-                            Marker.ANCHOR_BOTTOM
-                        )
-
+                        marker.position = location
+                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         mapView.overlays.add(marker)
 
                         mapView.invalidate()
                     }
-
                 }
             )
 
@@ -117,30 +101,20 @@ fun SafeWalkScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Text(
-                    text = "Safe Walk",
-                    color = Color.White,
-                    fontSize = 28.sp
-                )
+                Text("Safe Walk", color = Color.White, fontSize = 28.sp)
 
                 Spacer(modifier = Modifier.height(40.dp))
 
                 Button(
                     onClick = {
-
+                        walkPath.clear()
                         SafeWalkManager.startSafeWalk(context)
-
                         isWalking = true
-
                     }
                 ) {
-
                     Text("Start Safe Walk")
-
                 }
-
             }
-
         }
 
         if (isWalking) {
@@ -150,19 +124,13 @@ fun SafeWalkScreen() {
                     walkPath.clear()
                     SafeWalkManager.stopSafeWalk(context)
                     isWalking = false
-
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(30.dp)
             ) {
-
                 Text("End Safe Walk")
-
             }
-
         }
-
     }
-
 }

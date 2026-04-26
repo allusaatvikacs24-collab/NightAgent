@@ -4,12 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,6 +18,13 @@ import com.example.nightagent.sos.SafetySettings
 
 @Composable
 fun SettingsScreen() {
+
+    // ✅ Proper reactive state
+    val pushNotifications by SafetySettings.pushNotifications
+    val darkMode by SafetySettings.darkMode
+    val locationSharing by SafetySettings.locationSharing
+    val autoRecording by SafetySettings.autoRecording
+    val autoRecordingConsent by SafetySettings.autoRecordingConsent
 
     LazyColumn(
         modifier = Modifier
@@ -43,6 +47,7 @@ fun SettingsScreen() {
             Spacer(modifier = Modifier.height(24.dp))
         }
 
+        // 🔔 Notifications
         item {
 
             Text(
@@ -58,14 +63,15 @@ fun SettingsScreen() {
                 title = "Push Notifications",
                 subtitle = "Receive important safety alerts",
                 icon = Icons.Default.Notifications,
-                checked = SafetySettings.pushNotifications.value
+                checked = pushNotifications
             ) {
                 SafetySettings.pushNotifications.value = it
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
+        // 🎨 Appearance
         item {
 
             Text(
@@ -81,18 +87,19 @@ fun SettingsScreen() {
                 title = "Dark Mode",
                 subtitle = "Switch to dark theme",
                 icon = Icons.Default.DarkMode,
-                checked = SafetySettings.darkMode.value
+                checked = darkMode
             ) {
                 SafetySettings.darkMode.value = it
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
+        // 🔐 Privacy & Safety
         item {
 
             Text(
-                text = "Privacy",
+                text = "Privacy & Safety",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
@@ -104,21 +111,35 @@ fun SettingsScreen() {
                 title = "Location Sharing",
                 subtitle = "Share location with contacts",
                 icon = Icons.Default.LocationOn,
-                checked = SafetySettings.locationSharing.value
+                checked = locationSharing
             ) {
                 SafetySettings.locationSharing.value = it
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 🔥 FIXED: Actual recording toggle
             ToggleRow(
-                title = "Auto Recording Consent",
-                subtitle = "Record audio on SOS",
+                title = "Auto Recording",
+                subtitle = "Record video/audio on SOS",
                 icon = Icons.Default.Videocam,
-                checked = SafetySettings.autoRecordingConsent.value
+                checked = autoRecording
+            ) {
+                SafetySettings.autoRecording.value = it
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ToggleRow(
+                title = "Recording Consent",
+                subtitle = "User consent for recording",
+                icon = Icons.Default.Videocam,
+                checked = autoRecordingConsent
             ) {
                 SafetySettings.autoRecordingConsent.value = it
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

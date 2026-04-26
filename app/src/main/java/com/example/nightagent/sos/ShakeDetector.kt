@@ -19,12 +19,18 @@ class ShakeDetector(
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
     private var lastShakeTime = 0L
+    private var shakeCount = 0
+
+    // 🔥 FILTER VARIABLES
+    private var lastX = 0f
+    private var lastY = 0f
+    private var lastZ = 0f
 
     fun start() {
         sensorManager.registerListener(
             this,
             accelerometer,
-            SensorManager.SENSOR_DELAY_UI
+            SensorManager.SENSOR_DELAY_GAME
         )
     }
 
@@ -38,17 +44,41 @@ class ShakeDetector(
         val y = event.values[1]
         val z = event.values[2]
 
-        val acceleration = sqrt((x * x + y * y + z * z).toDouble())
+        // 🔥 REMOVE GRAVITY EFFECT (difference)
+        val deltaX = x - lastX
+        val deltaY = y - lastY
+        val deltaZ = z - lastZ
 
-        if (acceleration > 15) {
+        lastX = x
+        lastY = y
+        lastZ = z
 
-            val now = System.currentTimeMillis()
+        val acceleration = sqrt(
+            (deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ).toDouble()
+        )
 
-            if (now - lastShakeTime > 2000) {
+        val now = System.currentTimeMillis()
 
-                lastShakeTime = now
+        // 🔥 STRONG SHAKE ONLY
+        if (acceleration > 18) {
 
-                // Only trigger if Shake Detection toggle is ON
+            // Count shakes within short time
+            if (now - lastShakeTime < 1000) {
+                shakeCount++
+            } else {
+                shakeCount = 1
+            }
+
+            lastShakeTime = now
+
+            // 🔥 REQUIRE MULTIPLE SHAKES
+            if (shakeCount >= 2) {
+
+                shakeCount = 0
+
+                // Cooldown to prevent spam
+                if (now - lastShakeTime > 2000) return
+
                 if (SafetySettings.shakeDetection.value) {
                     onShake()
                 }

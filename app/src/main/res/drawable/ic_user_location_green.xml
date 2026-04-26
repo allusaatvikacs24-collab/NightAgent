@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="64dp"
+    android:viewportWidth="48"
+    android:viewportHeight="64">
+  <!-- Green user location pin with ring -->
+  <path
+      android:fillColor="#4CAF50"
+      android:pathData="M24,8 Q16,8 16,20 Q16,36 24,44 Q32,36 32,20 Q32,8 24,8 Z"/>
+  <!-- White dot center -->
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M23,19 L25,19 L25,21 L23,21 Z"/>
+  <!-- Outer ring for distinction -->
+  <path
+      android:fillColor="#81C784"
+      android:pathData="M18,14 Q24,14 30,20 Q24,26 18,20 Q24,14 30,20 Q24,26 18,20 Z"
+      android:strokeColor="#4CAF50"
+      android:strokeWidth="2"/>
+</vector>

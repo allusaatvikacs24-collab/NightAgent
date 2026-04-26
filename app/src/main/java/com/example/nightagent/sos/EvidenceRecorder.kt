@@ -4,62 +4,67 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.os.Environment
 import android.widget.Toast
+import androidx.lifecycle.LifecycleOwner
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 object EvidenceRecorder {
 
-    private var recorder: MediaRecorder? = null
-    private var file: File? = null
+    private var mediaRecorder: MediaRecorder? = null
+    private var lastRecordedFile: File? = null
+    var isRecording = false // Made public for UI
 
-    fun startRecording(context: Context) {
+    fun startRecording(context: Context, lifecycleOwner: LifecycleOwner) {
+        if (isRecording) return
 
-        try {
+        Toast.makeText(context, "Recording started", Toast.LENGTH_SHORT).show()
 
-            file = File(
-                context.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
-                "evidence_recording.3gp"
-            )
+        val moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+        val nightAgentDir = File(moviesDir, "NightAgent")
+        if (!nightAgentDir.exists()) {
+            nightAgentDir.mkdirs()
+        }
 
-            recorder = MediaRecorder().apply {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val file = File(nightAgentDir, "evidence_$timestamp.mp4")
+        lastRecordedFile = file
 
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+        mediaRecorder = MediaRecorder().apply {
+            val profile = android.media.CamcorderProfile.get(android.media.CamcorderProfile.QUALITY_480P)
+            setProfile(profile)
+            setOutputFile(file.absolutePath)
+            setOrientationHint(90)
+            setVideoFrameRate(30)
 
-                setOutputFile(file!!.absolutePath)
-
+            try {
                 prepare()
                 start()
+                isRecording = true
+            } catch (e: Exception) {
+                Toast.makeText(context, "Recording failed: ${e.message}", Toast.LENGTH_LONG).show()
+                release()
             }
-
-            Toast.makeText(context, "Recording started", Toast.LENGTH_SHORT).show()
-
-        } catch (e: Exception) {
-
-            e.printStackTrace()
-            Toast.makeText(context, "Recording failed: ${e.message}", Toast.LENGTH_LONG).show()
-
         }
     }
 
     fun stopRecording(context: Context) {
+        if (!isRecording) return
 
         try {
+            mediaRecorder?.stop()
+            mediaRecorder?.release()
+            mediaRecorder = null
+            isRecording = false
 
-            recorder?.apply {
-                stop()
-                release()
+            lastRecordedFile?.let { file ->
+                Toast.makeText(context, "Recording stopped and saved: ${file.name}", Toast.LENGTH_SHORT).show()
             }
-
-            recorder = null
-
-            Toast.makeText(context, "Recording saved", Toast.LENGTH_LONG).show()
-
         } catch (e: Exception) {
-
-            e.printStackTrace()
-            Toast.makeText(context, "Stop recording failed: ${e.message}", Toast.LENGTH_LONG).show()
-
+            Toast.makeText(context, "Stop recording failed", Toast.LENGTH_SHORT).show()
         }
     }
+
+    fun getLastRecordedFile(): File? = lastRecordedFile
 }

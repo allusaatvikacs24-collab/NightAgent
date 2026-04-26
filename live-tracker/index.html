@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Tracker - NightAgent</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getFirestore, collection, query, orderBy, limit, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        // TODO: Replace with your Firebase config from Firebase Console
+        const firebaseConfig = {
+            // apiKey: "your-api-key",
+            // authDomain: "your-project.firebaseapp.com",
+            // projectId: "your-project-id",
+            // storageBucket: "your-project.appspot.com",
+            // messagingSenderId: "123",
+            // appId: "your-app-id"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+    </script>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        #map { height: 100vh; width: 100vw; }
+        #status { position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 1000; }
+        #user-info { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div id="status">
+        <div id="user-info">Loading user...</div>
+        <div id="location-info">No location data</div>
+        <div id="last-update">Last update: Never</div>
+    </div>
+    <div id="map"></div>
+
+    <script type="module">
+        // Parse userId from URL path e.g., /track/test_user → test_user
+        const path = window.location.pathname;
+        const userId = path.split('/').pop() || 'test_user';
+        document.getElementById('user-info').innerHTML = `<strong>Tracking: ${userId}</strong>`;
+
+        const map = L.map('map').setView([40.7128, -74.0060], 13); // Default NYC view
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        let marker = L.marker([40.7128, -74.0060]).addTo(map)
+            .bindPopup('Live location')
+            .openPopup();
+
+        let unsubscribe;
+
+        // Real-time listener for latest location
+        const q = query(
+            collection(db, `safe_walks/${userId}/locations`),
+            orderBy('timestamp', 'desc'),
+            limit(1)
+        );
+
+        unsubscribe = onSnapshot(q, (snapshot) => {
+            if (!snapshot.empty) {
+                const locationData = snapshot.docs[0].data();
+                const lat = locationData.latitude;
+                const lng = locationData.longitude;
+                const timestamp = new Date(locationData.timestamp * 1000); // Assume seconds
+
+                // Update map
+                map.setView([lat, lng], 16);
+                marker.setLatLng([lat, lng]);
+
+                // Update UI
+                document.getElementById('location-info').textContent = 
+                    `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+                document.getElementById('last-update').textContent = 
+                    `Last update: ${timestamp.toLocaleString()}`;
+
+                console.log('Location updated:', { lat, lng, timestamp });
+            } else {
+                document.getElementById('location-info').textContent = 'No active safe walk';
+            }
+        }, (error) => {
+            console.error('Firestore error:', error);
+            document.getElementById('location-info').textContent = 'Error loading data';
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribe) unsubscribe();
+        });
+
+        // Manual refresh every 5s (backup to snapshot)
+        setInterval(() => {
+            console.log('Manual refresh check');
+        }, 5000);
+    </script>
+</body>
+</html>

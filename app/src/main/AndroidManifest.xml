@@ -3,12 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permissions -->
-    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
@@ -19,6 +21,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Nightagent">
+        
+        <!-- Google Play Services -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+            
+        <!-- Google Maps API Key (REPLACE WITH YOUR KEY from Google Cloud Console) -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="YOUR_MAPS_API_KEY" />
 
         <!-- Main Activity -->
         <activity
@@ -26,25 +38,39 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Nightagent">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-
         </activity>
 
         <!-- Power Button SOS Receiver -->
         <receiver
             android:name=".sos.PowerButtonReceiver"
             android:exported="false">
-
             <intent-filter>
                 <action android:name="android.intent.action.SCREEN_ON"/>
                 <action android:name="android.intent.action.SCREEN_OFF"/>
             </intent-filter>
-
         </receiver>
+
+        <!-- FCM Service -->
+        <service
+            android:name=".firebase.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Fake Call Activity (Full screen incoming call UI) -->
+        <activity
+            android:name=".ui.activities.FakeCallActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:showOnLockScreen="true" />
 
     </application>
 

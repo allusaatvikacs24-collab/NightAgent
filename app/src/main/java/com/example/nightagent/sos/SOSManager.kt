@@ -1,143 +1,158 @@
 package com.example.nightagent.sos
 
-
-import com.example.nightagent.notifications.NotificationHelper
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Looper
 import android.telephony.SmsManager
+import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.example.nightagent.R
 import com.example.nightagent.contacts.ContactManager
+import com.example.nightagent.notifications.NotificationHelper
+import com.example.nightagent.firebase.FirestoreManager
 
 object SOSManager {
 
     private var mediaPlayer: MediaPlayer? = null
-
     private var sosPending = false
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    fun triggerSOS(context: Context) {
+    fun triggerSOS(
+        context: Context,
+        onSOSComplete: () -> Unit = {}
+    ) {
+        if (sosPending) return
+        sosPending = true
 
-        // 🔊 Play alarm ONLY if Silent Mode is OFF
+        Log.d("TRACKING", "SOS STARTED")
+
+        Toast.makeText(context, "SOS Triggered!", Toast.LENGTH_SHORT).show()
+
         if (!SafetySettings.silentMode.value) {
-
             NotificationHelper.show(context, "SOS Triggered")
-
             mediaPlayer = MediaPlayer.create(context, R.raw.alarm_sos)
             mediaPlayer?.isLooping = true
             mediaPlayer?.start()
         }
 
-        // 🎤 Start recording if enabled
-        if (SafetySettings.autoRecording.value) {
-            EvidenceRecorder.startRecording(context)
+        LocationProvider.getLocation(context) { location ->
+
+            Log.d("TRACKING", "LOCATION CALLBACK HIT")
+
+            val message = if (location != null) {
+                "SOS ALERT! Location: https://maps.google.com/?q=${location.latitude},${location.longitude}"
+            } else {
+                "SOS ALERT! Location unavailable"
+            }
+
+            // 🔥 START FIRESTORE SESSION
+            FirestoreManager.startSOSSession(
+                message,
+                location?.latitude,
+                location?.longitude
+            )
+
+            Log.d("TRACKING", "SESSION STARTED")
+
+            // 🔥 START TRACKING
+            startLiveTracking(context)
+
+            // 🔥 SEND SMS
+            sendEmergencySMS(context, message)
         }
 
-        // ⏱ Stop recording after 30 sec
-        Handler(Looper.getMainLooper()).postDelayed({
+        // Stop alarm after 15s
+        mainHandler.postDelayed({ stopAlarm() }, 15000)
 
-            if (SafetySettings.autoRecording.value) {
-                EvidenceRecorder.stopRecording(context)
-            }
-
-            Handler(Looper.getMainLooper()).postDelayed({
-                EvidenceUploader.uploadRecording(context)
-            }, 3000)
-
+        // End SOS after 30s (IMPORTANT → extended)
+        mainHandler.postDelayed({
+            sosPending = false
+            Log.d("TRACKING", "SOS ENDED")
+            Toast.makeText(context, "SOS Completed", Toast.LENGTH_SHORT).show()
+            onSOSComplete()
         }, 30000)
+    }
 
-        // 🔹 If location sharing OFF → send SMS without location
-        if (!SafetySettings.locationSharing.value) {
+    // 🔥 LIVE TRACKING FIXED
+    private fun startLiveTracking(context: Context) {
 
-            val message = "HELP! I am in danger. Please contact me immediately."
+        Log.d("TRACKING", "startLiveTracking CALLED")
 
-            val emergencyContacts = ContactManager.getContacts(context)
+        val handler = Handler(Looper.getMainLooper())
 
-            val smsManager = SmsManager.getDefault()
+        val runnable = object : Runnable {
+            override fun run() {
 
-            for (contact in emergencyContacts) {
-                smsManager.sendTextMessage(
-                    contact.phone,
-                    null,
-                    message,
-                    null,
-                    null
-                )
+                Log.d("TRACKING", "Loop running, sosPending=$sosPending")
+
+                if (!sosPending) return
+
+                LocationProvider.getLocation(context) { location ->
+
+                    if (location != null) {
+                        FirestoreManager.updateLocation(
+                            location.latitude,
+                            location.longitude
+                        )
+
+                        Log.d(
+                            "TRACKING",
+                            "Location updated: ${location.latitude}, ${location.longitude}"
+                        )
+                    } else {
+                        Log.d("TRACKING", "Location NULL in loop")
+                    }
+                }
+
+                handler.postDelayed(this, 5000)
             }
+        }
 
+        handler.post(runnable)
+    }
+
+    private fun sendEmergencySMS(context: Context, message: String) {
+
+        val contacts = ContactManager.getContacts(context)
+
+        if (contacts.isEmpty()) {
+            Log.e("TRACKING", "NO CONTACTS")
             return
         }
 
-        // 📍 If location sharing ON → fetch location
-        LocationProvider.getLocation(context) { location ->
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.SEND_SMS
+        ) == PackageManager.PERMISSION_GRANTED
 
-            if (location != null) {
+        if (!hasPermission) {
+            Log.e("TRACKING", "NO SMS PERMISSION")
+            return
+        }
 
-                val lat = location.latitude
-                val lon = location.longitude
+        val smsManager = SmsManager.getDefault()
 
-                val message = """
-HELP! I am in danger.
-My location:
-https://maps.google.com/?q=$lat,$lon
-""".trimIndent()
+        for (contact in contacts) {
 
-                val emergencyContacts = ContactManager.getContacts(context)
-
-                if (emergencyContacts.isEmpty()) {
-
-                    if (!SafetySettings.silentMode.value) {
-                        NotificationHelper.show(context, "No emergency contacts added")
-                    }
-
-                    stopAlarm()
-                    return@getLocation
-                }
-
-                try {
-
-                    val smsManager = SmsManager.getDefault()
-
-                    for (contact in emergencyContacts) {
-                        smsManager.sendTextMessage(
-                            contact.phone,
-                            null,
-                            message,
-                            null,
-                            null
-                        )
-                    }
-
-                    if (!SafetySettings.silentMode.value) {
-                        NotificationHelper.show(context, "SOS SMS Sent!")
-                    }
-
-                } catch (e: Exception) {
-
-                    NotificationHelper.show(
-                        context,
-                        "SMS failed: ${e.message}")
-                }
-
-            } else {
-
-                if (!SafetySettings.silentMode.value) {
-                    NotificationHelper.show(context, "Could not get location")
-                }
-
+            try {
+                smsManager.sendTextMessage(contact.phone, null, message, null, null)
+                Log.d("TRACKING", "SMS sent to ${contact.phone}")
+            } catch (e: Exception) {
+                Log.e("TRACKING", "SMS FAILED: ${e.message}")
             }
-
-            // 🔊 Stop alarm after sending SMS
-            Handler(Looper.getMainLooper()).postDelayed({
-                stopAlarm()
-            }, 10000)
         }
     }
 
     private fun stopAlarm() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+        } catch (_: Exception) {
+        } finally {
+            mediaPlayer = null
+        }
     }
 }

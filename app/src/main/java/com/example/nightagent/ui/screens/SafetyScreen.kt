@@ -13,12 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.nightagent.ui.components.QuickActionCard
 import com.example.nightagent.ui.components.ToggleRow
+import androidx.compose.ui.graphics.Color
 import com.example.nightagent.ui.theme.*
 import com.example.nightagent.sos.SafetySettings
 
 @Composable
-fun SafetyScreen() {
+fun SafetyScreen(onFakeCallClick: () -> Unit) {
 
     LazyColumn(
         modifier = Modifier
@@ -136,6 +138,23 @@ fun SafetyScreen() {
             ) { SafetySettings.autoRecording.value = it }
 
             Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                "Quick Actions",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                QuickActionCard(
+                    title = "Fake Call",
+                    icon = Icons.Default.Call,
+                    iconColor = Color(0xFFFF9800),
+                    onClick = onFakeCallClick
+                )
+            }
         }
     }
 }
